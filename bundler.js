@@ -5,7 +5,7 @@
 const fs = require('fs')
 const babylon = require('babylon')
 const traverse = require('babel-traverse').default;
-
+const path = require('path')
 // Counter for assets
 let ID = 0;
 
@@ -48,6 +48,44 @@ function createAsset(filename){
 
 }
 
-const mainAsset = createAsset('./example/entry.js');
+// Get AST graph by taking entry path
+// parsing it, and go over each of its
+// dependencies 
+function createGraph(entry) {
+    const mainAsset = createAsset(entry);
+    const queue = [mainAsset];
 
-console.log(mainAsset);
+    // Every item in queue, go over it
+    // and parse each of it's dependecies
+    // and then add those to the queue
+    // keep going until queue is empty
+    for(const asset of queue){
+        // Turn asset path from relative to absolute
+        const dirname = path.dirname(asset.filename);
+
+        asset.mapping = {};
+
+        // For each dependency, get the absolute path
+        // from relative path. Call the create asset function
+        // on each child
+        asset.dependencies.forEach(relativePath => {
+            const absolutePath = path.join(dirname, relativePath);
+
+            const child = createAsset(absolutePath);
+            
+            // Relationship between dependencies 
+            // An object with key of relative path
+            // and value of its id, to better 
+            // show which other object of the dependency
+            // array it is related to
+            asset.mapping[relativePath] = child.id;
+
+            queue.push(child);
+        });
+    }
+
+    return queue;
+}
+
+const graph = createGraph('./example/entry.js')
+console.log(graph)
