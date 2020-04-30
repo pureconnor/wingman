@@ -6,6 +6,8 @@ const fs = require('fs')
 const babylon = require('babylon')
 const traverse = require('babel-traverse').default;
 const path = require('path')
+const babel = require('babel-core')
+
 // Counter for assets
 let ID = 0;
 
@@ -38,14 +40,21 @@ function createAsset(filename){
     // found in Abstract state tree
     const id = ID++;
 
+    // Get code from assets, and transform to universal
+    // understood syntax on all browsers
+    // Presets is a set of rules on how to transform the code
+    const {code} = babel.transformFromAst(ast, null, {
+        presets: ['env'],
+    });
+
     // Return object with information about 
     // asset 
     return {
         id, 
         filename,
-        dependencies
+        dependencies,
+        code
     };
-
 }
 
 // Get AST graph by taking entry path
@@ -87,5 +96,35 @@ function createGraph(entry) {
     return queue;
 }
 
+// Turn the graph into a bundle
+function bundle(graph){
+    let modules = '';
+
+    // Use transpiler to convert syntax
+    // to universal language understood by all
+    // browsers (babel)
+    graph.forEach(mod => {
+        modules += `${mod.id}:[
+            function(require, module, exports){
+                ${mod.code}
+            },
+
+        ],`;
+    });
+    
+    // Bundle represented as large string, 
+    // self-invoking function that creates object
+    // that represents every module in the application
+    const result = `
+        (function() {
+
+        })({${modules}})
+    `;
+
+    return result;
+}
+
 const graph = createGraph('./example/entry.js')
-console.log(graph)
+const result = bundle(graph)
+
+console.log(result)
