@@ -1,0 +1,1 @@
+export const name = 'Wingman - The simple builder'
