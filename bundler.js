@@ -6,7 +6,7 @@ const fs = require('fs')
 
 function createAsset(filename){
     // Reads contents of file as a string
-    const content = fs.readFileSync(filename, '')
+    const content = fs.readFileSync(filename, 'utf-8')
 
     console.log(content)
 }
